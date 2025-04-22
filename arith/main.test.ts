@@ -1,5 +1,5 @@
 import { parseArith } from "../tiny-ts-parser.ts";
-import { typecheck } from "./main.ts";
+import { typecheck, typecheck_exercises } from "./main.ts";
 
 import { assertEquals, assertThrows } from "jsr:@std/assert";
 
@@ -44,6 +44,41 @@ for (const { name, expected } of testCases.negative) {
     fn: () => {
       assertThrows(() => {
         typecheck(parseArith(name));
+      }, expected);
+    },
+  });
+}
+
+const testCases_exercises = {
+  positive: [
+    { name: "1 ? true : false", expected: { tag: "Boolean" } },
+    { name: "(1 + 3) ? 2 : 1", expected: { tag: "Number" } },
+  ],
+  negative: [
+    { name: "(1 + true) ? 1 : 2", expected: "number expected" },
+    {
+      name: "(1 ? 1 : false) ? 1 : 2",
+      expected: "then and else have different types",
+    },
+  ],
+};
+
+for (const { name, expected } of testCases_exercises.positive) {
+  Deno.test({
+    name: `typecheck_exercises/arith/positive/${name}`,
+    fn: () => {
+      const result = typecheck_exercises(parseArith(name));
+      assertEquals(result, expected);
+    },
+  });
+}
+
+for (const { name, expected } of testCases_exercises.negative) {
+  Deno.test({
+    name: `typecheck_exercises/arith/negative/${name}`,
+    fn: () => {
+      assertThrows(() => {
+        typecheck_exercises(parseArith(name));
       }, expected);
     },
   });
