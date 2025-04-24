@@ -87,3 +87,73 @@ export function typecheck(term: TermForBasic, env: TypeEnv): TypeForBasic {
       throw new Error("not implemented yet");
   }
 }
+
+export function typecheck_exercises(
+  term: TermForBasic,
+  env: TypeEnv,
+): TypeForBasic {
+  switch (term.tag) {
+    case "true":
+      return { tag: "Boolean" };
+    case "false":
+      return { tag: "Boolean" };
+    case "if": {
+      typecheck_exercises(term.cond, env);
+      const thenType = typecheck_exercises(term.thn, env);
+      const elsType = typecheck_exercises(term.els, env);
+      if (!typeEq(thenType, elsType)) {
+        throw "then and else have different types";
+      }
+      return thenType;
+    }
+    case "number":
+      return { tag: "Number" };
+    case "add": {
+      const leftType = typecheck_exercises(term.left, env);
+      if (leftType.tag !== "Number") throw "number expected";
+      const rightType = typecheck_exercises(term.right, env);
+      if (rightType.tag !== "Number") throw "number expected";
+      return { tag: "Number" };
+    }
+    case "var": {
+      // 未定義変数がある（envに対応する値がない）場合はエラー
+      if (env[term.name] === undefined) {
+        throw new Error(`undefined variable: ${term.name}`);
+      }
+      return env[term.name];
+    }
+    case "func": {
+      // 演習問題: 新しくコピーした環境を作成しない場合の問題点の確認
+      // アウトな例: ((x: number) => x)(x)
+      //                              ^^^ この x は未定義変数のはずだが、エラーにはならず Number と認識される
+      for (const { name, type } of term.params) {
+        env[name] = type;
+      }
+      const retType = typecheck_exercises(term.body, env);
+      return {
+        tag: "Func",
+        params: term.params,
+        retType,
+      };
+    }
+    case "call": {
+      const funcType = typecheck_exercises(term.func, env);
+      if (funcType.tag !== "Func") throw "function expected";
+      if (funcType.params.length !== term.args.length) {
+        throw "argument length mismatch";
+      }
+      for (let i = 0; i < term.args.length; i++) {
+        const argType = typecheck_exercises(term.args[i], env);
+        const paramType = funcType.params[i].type;
+        if (!typeEq(argType, paramType)) {
+          throw new Error(
+            `argument type mismatch: expected ${paramType.tag}, but got ${argType.tag}`,
+          );
+        }
+      }
+      return funcType.retType;
+    }
+    default:
+      throw new Error("not implemented yet");
+  }
+}

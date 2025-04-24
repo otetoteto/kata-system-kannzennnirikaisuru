@@ -49,9 +49,9 @@ export function typecheck_exercises(term: TermForArith): TypeForArith {
     case "false":
       return { tag: "Boolean" };
     case "if": {
-      typecheck(term.cond); // cond の方チェックをしない場合は、ここで型エラーがある場合にチェックされない
-      const thenType = typecheck(term.thn);
-      const elsType = typecheck(term.els);
+      typecheck_exercises(term.cond); // cond の方チェックをしない場合は、ここで型エラーがある場合にチェックされない
+      const thenType = typecheck_exercises(term.thn);
+      const elsType = typecheck_exercises(term.els);
       if (thenType.tag !== elsType.tag) {
         throw "then and else have different types";
       }
@@ -60,9 +60,9 @@ export function typecheck_exercises(term: TermForArith): TypeForArith {
     case "number":
       return { tag: "Number" };
     case "add": {
-      const leftType = typecheck(term.left);
+      const leftType = typecheck_exercises(term.left);
       if (leftType.tag !== "Number") throw "number expected";
-      const rightType = typecheck(term.right);
+      const rightType = typecheck_exercises(term.right);
       if (rightType.tag !== "Number") throw "number expected";
       return { tag: "Number" };
     }

@@ -1,5 +1,5 @@
 import { parseBasic } from "../tiny-ts-parser.ts";
-import { typecheck } from "./main.ts";
+import { typecheck, typecheck_exercises } from "./main.ts";
 
 import { assertObjectMatch, assertThrows } from "jsr:@std/assert";
 
@@ -96,3 +96,17 @@ for (const { name, expected } of testCases.negative) {
     },
   });
 }
+
+Deno.test({
+  name: "演習問題: 新しくコピーした環境を作成しない場合の問題点の確認",
+  fn: () => {
+    const result = typecheck_exercises(
+      parseBasic("((x: number) => 1)(x)"),
+      {},
+    );
+    // Number 型として認識されてしまう
+    assertObjectMatch(result, {
+      tag: "Number",
+    });
+  },
+});
