@@ -16,7 +16,7 @@ function typeEq(ty1: TypeForBasic, ty2: TypeForBasic): boolean {
       for (let i = 0; i < ty1.params.length; i++) {
         if (!typeEq(ty1.params[i].type, ty2.params[i].type)) return false;
       }
-      if (typeEq(ty1.retType, ty2.retType)) return false;
+      if (!typeEq(ty1.retType, ty2.retType)) return false;
       return true;
     }
   }
@@ -77,11 +77,25 @@ export function typecheck(term: TermForBasic, env: TypeEnv): TypeForBasic {
         const paramType = funcType.params[i].type;
         if (!typeEq(argType, paramType)) {
           throw new Error(
-            `argument type mismatch: expected ${paramType.tag}, but got ${argType.tag}`,
+            `argument type mismatch: expected ${
+              JSON.stringify(paramType)
+            }, but got ${JSON.stringify(argType)}`,
           );
         }
       }
       return funcType.retType;
+    }
+    case "seq": {
+      typecheck(term.body, env);
+      return typecheck(term.rest, env);
+    }
+    // const x = 1; x;
+    //       ^   ^  ^
+    //    name init rest
+    case "const": {
+      const ty = typecheck(term.init, env);
+      const newEnv = { ...env, [term.name]: ty };
+      return typecheck(term.rest, newEnv);
     }
     default:
       throw new Error("not implemented yet");

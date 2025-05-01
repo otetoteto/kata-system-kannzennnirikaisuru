@@ -50,6 +50,48 @@ const testCases = {
         retType: { tag: "Number" },
       },
     },
+    {
+      name: "1; 2; 3; true;",
+      expected: {
+        tag: "Boolean",
+      },
+    },
+    {
+      name:
+        "const x = (y: number) => y; const z = (w: number) => (x: number) => w + x; const a = z(x(1))(1); a;",
+      expected: {
+        tag: "Number",
+      },
+    },
+    {
+      name:
+        "const x = (y: number) => y; const z = (s: (w: number) => number) => (x: number) => s(x); const a = z(x)(1); a;",
+      expected: {
+        tag: "Number",
+      },
+    },
+    {
+      name:
+        "const x: (x: (x: number) => number) => number = (x: (x: number) => number) => x; x;",
+      expected: {
+        tag: "Func",
+        params: [
+          {
+            name: "x",
+            type: {
+              tag: "Func",
+              params: [{ name: "x", type: { tag: "Number" } }],
+              retType: { tag: "Number" },
+            },
+          },
+        ],
+        retType: {
+          tag: "Func",
+          params: [{ name: "x", type: { tag: "Number" } }],
+          retType: { tag: "Number" },
+        },
+      },
+    },
   ],
   negative: [
     { name: "x", expected: "undefined variable: x" },
