@@ -1,4 +1,10 @@
-import { TermForBasic, TypeForBasic } from "./../tiny-ts-parser.ts";
+import {
+  error,
+  TermForBasic,
+  TermForBasic2,
+  TypeForBasic,
+  TypeForBasic2,
+} from "./../tiny-ts-parser.ts";
 
 type TypeEnv = Record<string, TypeForBasic>;
 
@@ -33,7 +39,7 @@ export function typecheck(term: TermForBasic, env: TypeEnv): TypeForBasic {
       const thenType = typecheck(term.thn, env);
       const elsType = typecheck(term.els, env);
       if (!typeEq(thenType, elsType)) {
-        throw "then and else have different types";
+        error("then and else have different types", term);
       }
       return thenType;
     }
@@ -41,15 +47,15 @@ export function typecheck(term: TermForBasic, env: TypeEnv): TypeForBasic {
       return { tag: "Number" };
     case "add": {
       const leftType = typecheck(term.left, env);
-      if (leftType.tag !== "Number") throw "number expected";
+      if (leftType.tag !== "Number") error("number expected", term);
       const rightType = typecheck(term.right, env);
-      if (rightType.tag !== "Number") throw "number expected";
+      if (rightType.tag !== "Number") error("number expected", term);
       return { tag: "Number" };
     }
     case "var": {
       // 未定義変数がある（envに対応する値がない）場合はエラー
       if (env[term.name] === undefined) {
-        throw new Error(`undefined variable: ${term.name}`);
+        error(`undefined variable: ${term.name}`, term);
       }
       return env[term.name];
     }
@@ -70,16 +76,15 @@ export function typecheck(term: TermForBasic, env: TypeEnv): TypeForBasic {
       const funcType = typecheck(term.func, env);
       if (funcType.tag !== "Func") throw "function expected";
       if (funcType.params.length !== term.args.length) {
-        throw "argument length mismatch";
+        error("argument length mismatch", term);
       }
       for (let i = 0; i < term.args.length; i++) {
         const argType = typecheck(term.args[i], env);
         const paramType = funcType.params[i].type;
         if (!typeEq(argType, paramType)) {
-          throw new Error(
-            `argument type mismatch: expected ${
-              JSON.stringify(paramType)
-            }, but got ${JSON.stringify(argType)}`,
+          error(
+            `argument type mismatch: expected ${paramType.tag}, but got ${argType.tag}`,
+            term,
           );
         }
       }
@@ -166,6 +171,88 @@ export function typecheck_exercises(
         }
       }
       return funcType.retType;
+    }
+    default:
+      throw new Error("not implemented yet");
+  }
+}
+
+export function typecheck2(term: TermForBasic2, env: TypeEnv): TypeForBasic2 {
+  switch (term.tag) {
+    case "true":
+      return { tag: "Boolean" };
+    case "false":
+      return { tag: "Boolean" };
+    case "if": {
+      typecheck2(term.cond, env);
+      const thenType = typecheck2(term.thn, env);
+      const elsType = typecheck2(term.els, env);
+      if (!typeEq(thenType, elsType)) {
+        error("then and else have different types", term);
+      }
+      return thenType;
+    }
+    case "number":
+      return { tag: "Number" };
+    case "add": {
+      const leftType = typecheck2(term.left, env);
+      if (leftType.tag !== "Number") error("number expected", term);
+      const rightType = typecheck2(term.right, env);
+      if (rightType.tag !== "Number") error("number expected", term);
+      return { tag: "Number" };
+    }
+    case "var": {
+      // 未定義変数がある（envに対応する値がない）場合はエラー
+      if (env[term.name] === undefined) {
+        error(`undefined variable: ${term.name}`, term);
+      }
+      return env[term.name];
+    }
+    case "func": {
+      // env は関数ごとに作成される。また外界の env を変更しないため、新しい env をコピーする
+      const newEnv = { ...env };
+      for (const { name, type } of term.params) {
+        newEnv[name] = type;
+      }
+      const retType = typecheck2(term.body, newEnv);
+      return {
+        tag: "Func",
+        params: term.params,
+        retType,
+      };
+    }
+    case "call": {
+      const funcType = typecheck2(term.func, env);
+      if (funcType.tag !== "Func") throw "function expected";
+      if (funcType.params.length !== term.args.length) {
+        error("argument length mismatch", term);
+      }
+      for (let i = 0; i < term.args.length; i++) {
+        const argType = typecheck2(term.args[i], env);
+        const paramType = funcType.params[i].type;
+        if (!typeEq(argType, paramType)) {
+          error(
+            `argument type mismatch: expected ${paramType.tag}, but got ${argType.tag}`,
+            term,
+          );
+        }
+      }
+      return funcType.retType;
+    }
+    case "seq2": {
+      let ty: TypeForBasic2 | null = null;
+      for (const body of term.body) {
+        ty = typecheck2(body, env);
+      }
+      if (ty === null) {
+        error("typecheck2: empty body", term);
+      }
+      return ty;
+    }
+    case "const2": {
+      const ty = typecheck2(term.init, env);
+      env[term.name] = ty;
+      return ty;
     }
     default:
       throw new Error("not implemented yet");
