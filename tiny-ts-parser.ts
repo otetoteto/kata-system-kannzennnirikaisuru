@@ -28,7 +28,7 @@ type Param = { name: string; type: Type };
 type PropertyType = { name: string; type: Type };
 type VariantType = { tagLabel: string; props: PropertyType[] };
 
-type Term =
+export type Term =
   | { loc: Location; tag: "true" }
   | { loc: Location; tag: "false" }
   | { loc: Location; tag: "not"; cond: Term }
